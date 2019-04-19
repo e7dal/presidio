@@ -1,5 +1,8 @@
-# Entity
-# Sentence
+# This file contains sentences with relevant context words that should be resulting in a better score
+# Each item has the following structure:
+#
+# 1) Entity type
+# 2) Sentence
 
 IP_ADDRESS
 my ip: 192.168.0.1
@@ -57,3 +60,6 @@ my banking account number is 912803456
 
 US_PASSPORT
 my passport number is 912803456
+
+US_PASSPORT
+my passport number is 912803456 and now there are a lot a lot a lot a lot a lot a lot a lot a lot a lot a lot a lot a lot a lot a lot a lot a lot a lot of other words

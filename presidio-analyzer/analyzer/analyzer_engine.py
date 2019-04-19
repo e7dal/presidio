@@ -1,11 +1,12 @@
-import copy
 import logging
 import os
 
-from analyzer import PatternRecognizer, EntityRecognizer
-from analyzer.nlp_engine import SpacyNlpEngine
-from analyzer.proto import analyze_pb2_grpc, analyze_pb2, common_pb2
+import analyze_pb2
+import analyze_pb2_grpc
+import common_pb2
+
 from analyzer.recognizer_registry import RecognizerRegistry
+from analyzer.nlp_engine import SpacyNlpEngine
 
 loglevel = os.environ.get("LOG_LEVEL", "INFO")
 logging.basicConfig(
@@ -114,146 +115,12 @@ class AnalyzerEngine(analyze_pb2_grpc.AnalyzeServiceServicer):
                 recognizer.load()
                 recognizer.is_loaded = True
 
-            raw_results = recognizer.analyze(text, entities, nlp_artifacts)
-            if raw_results is not None:
-                # try to improve the results score using the surronding context
-                # words
-                raw_results = \
-                    self.enhance_using_context(
-                        text, recognizer, raw_results, nlp_artifacts)
-                results.extend(raw_results)
+            # analyze using the current recognizer and append the results
+            current_results = recognizer.analyze(text, entities, nlp_artifacts)
+            if current_results:
+                results.extend(current_results)
 
         return AnalyzerEngine.__remove_duplicates(results)
-
-    def __calculate_context_similarity(self,
-                                       context_text,
-                                       context_list):
-        """Context similarity is 1 if there's exact match between a keyword in
-           context_text and any keyword in context_list
-
-        :param context_text a string of the prefix and suffix of the found
-               match
-        :param context_list a list of words considered as context keywords
-        """
-
-        if context_list is None:
-            return 0
-
-        context_keywords = self.__context_to_keywords(context_text)
-        if context_keywords is None:
-            return 0
-
-        similarity = 0.0
-        for context_keyword in context_keywords:
-            if context_keyword in context_list:
-                logging.info("Found context keyword '%s'", context_keyword)
-                similarity = 1
-                break
-
-        return similarity
-
-    def enhance_using_context(self, text, recognizer, raw_results,
-                              nlp_artifacts):
-        # create a deep copy of the results object so we can manipulate it
-        results = copy.deepcopy(raw_results)
-
-        # Sanity
-        if nlp_artifacts is None:
-            logging.warning('nlp artifacts were not provided')
-            return results
-        if not hasattr(recognizer, 'context'):
-            logging.info('recognizer does not support context enhancement')
-            return results
-
-        for result in results:
-            # extract lemmatized context from the surronding of the match
-            logging.debug('match is \'%s\'', text[result.start:result.end])
-            context = self.__extract_context(
-                nlp_artifacts=nlp_artifacts,
-                word=text[result.start:result.end],
-                start=result.start)
-
-            logging.debug('context is %s', context)
-            context_similarity = self.__calculate_context_similarity(
-                context, recognizer.context)
-            if context_similarity >= \
-               PatternRecognizer.CONTEXT_SIMILARITY_THRESHOLD:
-                result.score += \
-                  context_similarity * \
-                  PatternRecognizer.CONTEXT_SIMILARITY_FACTOR
-                result.score = max(
-                    result.score,
-                    PatternRecognizer.MIN_SCORE_WITH_CONTEXT_SIMILARITY)
-                result.score = min(
-                    result.score,
-                    EntityRecognizer.MAX_SCORE)
-        return results
-
-    @staticmethod
-    def __context_to_keywords(context):
-        return context.split(' ')
-
-    @staticmethod
-    def __extract_context(nlp_artifacts, word, start):
-        """ Extracts words surronding another given word.
-            The text from which the context is extracted is given in the nlp
-            doc
-            :param nlp_artifacts: An abstraction layer which holds different
-                                  items which are result of a NLP pipeline
-                                  execution on a given text
-            :param word: The word to look for context around
-            :param start: The start index of the word in the original text
-        """
-
-        logging.debug('Extracting context around \'%s\'', word)
-        context_keywords = nlp_artifacts.keywords
-
-        found = False
-        # we use the known start index of the original word to find the actual
-        # token at that index, we are not checking for equivilance since the
-        # token might be just a substring of that word (e.g. for phone number
-        # 555-124564 the first token might be just '555')
-        tokens = nlp_artifacts.tokens
-        tokens_indices = nlp_artifacts.tokens_indices
-        for i in range(len(nlp_artifacts.tokens)):
-            if ((tokens_indices[i] == start) or
-                    (tokens_indices[i] < start <
-                     tokens_indices[i] + len(tokens[i]))):
-                partial_token = tokens_indices[i]
-                found = True
-                break
-
-            # no need to continue iterating after the word is found
-            if found:
-                break
-
-        token_count = 0
-        if not found:
-            logging.error('Did not find expected word: %s', word)
-            return ''
-
-        # now, iterate over the lemmatized text to find the location of that
-        # partial token
-        for keyword in context_keywords:
-            if keyword == partial_token:
-                break
-            token_count += 1
-
-        # build the actual context
-        context = ''
-        i = 0
-        for keyword in context_keywords:
-            # if the current examined word is n chars before the token or m
-            # after, add it to the context string
-            if token_count - PatternRecognizer.CONTEXT_PREFIX_COUNT <= i + 1 \
-                  <= token_count + PatternRecognizer.CONTEXT_SUFFIX_COUNT:
-                context += ' ' + keyword
-            i += 1
-
-        logging.debug('Context sentence for word \'%s\' is: %s',
-                      word,
-                      context)
-        return context
 
     @staticmethod
     def __list_entities(recognizers):
