@@ -1,8 +1,8 @@
 import string
 
-from analyzer.predefined_recognizers.iban_patterns import regex_per_country
 from analyzer import Pattern, PatternRecognizer
-from analyzer.entity_recognizer import EntityRecognizer
+from analyzer import EntityRecognizer
+from analyzer.predefined_recognizers.iban_patterns import regex_per_country
 
 # Import 're2' regex engine if installed, if not- import 'regex'
 try:

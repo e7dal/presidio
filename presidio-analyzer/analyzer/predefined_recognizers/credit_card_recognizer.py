@@ -1,6 +1,6 @@
 from analyzer import Pattern
 from analyzer import PatternRecognizer
-from analyzer.entity_recognizer import EntityRecognizer
+from analyzer import EntityRecognizer
 
 # pylint: disable=line-too-long
 REGEX = r'\b((4\d{3})|(5[0-5]\d{2})|(6\d{3})|(1\d{3})|(3\d{3}))[- ]?(\d{3,4})[- ]?(\d{3,4})[- ]?(\d{3,5})\b'  # noqa: E501

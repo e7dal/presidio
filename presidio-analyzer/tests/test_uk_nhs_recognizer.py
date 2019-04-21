@@ -1,8 +1,7 @@
 from unittest import TestCase
 
-from tests import assert_result
 from analyzer.predefined_recognizers import NhsRecognizer
-from analyzer.entity_recognizer import EntityRecognizer
+from tests import assert_result
 
 nhs_recognizer = NhsRecognizer()
 entities = ["UK_NHS"]

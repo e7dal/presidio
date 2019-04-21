@@ -1,10 +1,7 @@
 import logging
 import os
 
-import analyze_pb2
-import analyze_pb2_grpc
-import common_pb2
-
+from analyzer.proto import analyze_pb2_grpc, analyze_pb2, common_pb2
 from analyzer.recognizer_registry import RecognizerRegistry
 from analyzer.nlp_engine import SpacyNlpEngine
 

@@ -1,11 +1,9 @@
 import datetime
 
-from analyzer import LocalRecognizer, \
-    Pattern, \
-    RecognizerResult, \
-    EntityRecognizer
-
 # Import 're2' regex engine if installed, if not- import 'regex'
+from analyzer import Pattern, RecognizerResult, \
+    EntityRecognizer, LocalRecognizer
+
 try:
     import re2 as re
 except ImportError:
@@ -63,8 +61,8 @@ class PatternRecognizer(LocalRecognizer):
                 # try to improve the results score using the surrounding
                 # context words
                 enhanced_result = \
-                  self.enhance_using_context(
-                      text, pattern_result, nlp_artifacts, self.context)
+                    self.enhance_using_context(
+                        text, pattern_result, nlp_artifacts, self.context)
                 results.extend(enhanced_result)
             elif pattern_result:
                 results.extend(pattern_result)

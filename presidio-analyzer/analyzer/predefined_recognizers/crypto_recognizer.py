@@ -1,7 +1,7 @@
 from hashlib import sha256
 from analyzer import Pattern
 from analyzer import PatternRecognizer
-from analyzer.entity_recognizer import EntityRecognizer
+from analyzer import EntityRecognizer
 
 # Copied from:
 # http://rosettacode.org/wiki/Bitcoin/address_validation#Python
